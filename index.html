@@ -36,13 +36,19 @@
     .btn:disabled { opacity: .5; cursor:not-allowed; }
     .danger { color: var(--error); border-color:#442222; }
 
-    #log {
-      flex: 1;
-      background: #0d120e; border: 1px solid var(--border); border-radius: 12px; padding: 10px;
-      overflow-y: auto;
-      line-height: 1.35; box-shadow: 0 0 0 1px #0c140e inset;
-      word-wrap: break-word; overflow-wrap: anywhere;
-    }
+      #log {
+    background: #0d120e;
+    border: 1px solid #1d2a1f;
+    border-radius: 12px;
+    padding: 10px;
+    height: 400px;          /* fixed height */
+    max-height: 70vh;       /* responsive cap */
+    overflow-y: auto;       /* vertical scroll */
+    white-space: pre-wrap;  /* wrap long text */
+    word-wrap: break-word;  /* break long words if needed */
+    line-height: 1.35;
+  }
+
     .line { padding: 6px 0; }
     .sys { color: var(--muted); }
     .err { color: var(--error); }
@@ -199,14 +205,33 @@ async function setFavicon(dataUri) {
     }
   };
 
-  const shortTime = (ts)=>{
-    if (!ts) return '';
-    const d = new Date(ts);
-    return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-  };
+ const shortTime = (ts) => {
+  if (!ts) return '';
+  const d = new Date(ts);
+
+  const pad = (n) => String(n).padStart(2, '0');
+  const hhmmss = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  const dMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+  if (dMidnight.getTime() === today.getTime()) {
+    return `today ${hhmmss}`;
+  }
+  if (dMidnight.getTime() === yesterday.getTime()) {
+    return `yesterday ${hhmmss}`;
+  }
+
+  return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()} ${hhmmss}`;
+};
+
 
   function renderContent(text, el){
-    const regex = /!\[\]\((https?:\/\/[^\s)]+)\)/g;
+const regex = /!\[\]\(([^\s)]+)\)/g;
     let lastIndex = 0, match;
     while ((match = regex.exec(text))){
       if (match.index > lastIndex){
