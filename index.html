@@ -30,25 +30,27 @@
 
     #log {
       background: #0d120e; border: 1px solid var(--border); border-radius: 12px; padding: 10px; height: 420px; overflow-y: auto;
-      white-space: pre-wrap; line-height: 1.35; box-shadow: 0 0 0 1px #0c140e inset;
+      white-space: normal; line-height: 1.35; box-shadow: 0 0 0 1px #0c140e inset;
     }
-    .line { display:block; padding: 2px 0; }
+    .line { padding: 6px 0; }
     .sys { color: var(--muted); }
     .err { color: var(--error); }
     .warn { color: var(--warn); }
-    .me { color: #9adfff; }
-    .msg { color: var(--text); }
-    .dim { opacity: .7; }
+    .msg { color: var(--text); display:grid; grid-template-columns:30px auto; gap:6px; align-items:flex-start; }
+    .msg img.icon { width:24px; height:24px; border-radius:50%; grid-row: span 2; }
+    .msg-header { font-size: 13px; color: var(--muted); }
+    .msg-body { margin-top:2px; white-space: pre-wrap; }
 
     .composer { display:grid; grid-template-columns: 1fr auto; gap:8px; }
     .input { width: 100%; padding:10px; border-radius:10px; border:1px solid var(--border); background: var(--panel); color: var(--text); }
     .toolbar { display:flex; gap:8px; align-items:center; }
     .filelist { display:flex; gap:6px; flex-wrap:wrap; }
     .filepill { border:1px solid var(--border); background:#0e1511; padding:4px 8px; border-radius:999px; font-size:12px; }
-    a.dl { color:#c7e9ff; text-decoration: underline; cursor:pointer; }
+    a.dl { color:#c7e9ff; text-decoration: underline; cursor:pointer; display:inline-block; margin-top:2px; }
 
     .legend { font-size: 12px; color: var(--muted); }
     .sectionTitle { color:#a1f0a8; margin: 8px 0 4px; }
+    .msg img.preview { max-width: 260px; border-radius: 8px; margin-top:4px; display:block; }
   </style>
 </head>
 <body>
@@ -80,7 +82,6 @@
 </div>
 
 <script type="module">
-  // ---------- helpers ----------
   const $ = (s)=>document.querySelector(s);
   const logEl = $('#log');
   const statusEl = $('#status');
@@ -93,6 +94,12 @@
   const clearBtn = $('#clearLog');
   const reconnectBtn = $('#reconnect');
 
+  // placeholders from external JSON
+  let ICONS = { none:"", onrror:"" };
+  fetch("https://drmineword.github.io/images.json")
+    .then(r=>r.json()).then(j=>ICONS=j).catch(()=>{});
+
+  // ---------- helpers ----------
   const ui = {
     line(msg, cls='msg'){
       const d = document.createElement('div');
@@ -105,8 +112,34 @@
     sys(msg){ return this.line(`[system] ${msg}`, 'sys'); },
     err(msg){ return this.line(`[error] ${msg}`, 'err'); },
     warn(msg){ return this.line(`[warn] ${msg}`, 'warn'); },
-    me(msg){ return this.line(`[me] ${msg}`, 'me'); },
-    msg(username, content){ return this.line(`${username}: ${content}`, 'msg'); },
+    msgElement(msg){
+      const container = document.createElement('div');
+      container.className = 'line msg';
+
+      // icon
+      const icon = document.createElement('img');
+      icon.className = 'icon';
+      icon.src = msg.user_icon || ICONS.none;
+      icon.onerror = ()=>{ icon.src = ICONS.onrror; };
+      container.appendChild(icon);
+
+      // header
+      const header = document.createElement('div');
+      header.className = 'msg-header';
+      const when = shortTime(msg.timestamp);
+      header.textContent = `${msg.username || 'user'} ${when? '('+when+')':''}`;
+      container.appendChild(header);
+
+      // body
+      const body = document.createElement('div');
+      body.className = 'msg-body';
+      renderContent(msg.content||'', body);
+      container.appendChild(body);
+
+      logEl.appendChild(container);
+      logEl.scrollTop = logEl.scrollHeight;
+      return container;
+    },
     fileBadge({name,size}){
       const span = document.createElement('span');
       span.className = 'filepill';
@@ -115,12 +148,45 @@
     }
   };
 
-  const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
+  const shortTime = (ts)=>{
+    if (!ts) return '';
+    const d = new Date(ts);
+    return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  };
+
+  function renderContent(text, el){
+    const regex = /!\[\]\((https?:\/\/[^\s)]+)\)/g;
+    let lastIndex = 0, match;
+    while ((match = regex.exec(text))){
+      if (match.index > lastIndex){
+        el.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+      }
+      const img = document.createElement('img');
+      img.className = 'preview';
+      img.src = match[1];
+      img.alt = 'image';
+      img.onerror=()=>{ img.style.display='none'; };
+      el.appendChild(img);
+      lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < text.length){
+      el.appendChild(document.createTextNode(text.slice(lastIndex)));
+    }
+  }
+
   const formatSize = (n)=>{
     if (n==null) return '?';
     const u=['B','KB','MB','GB']; let i=0; while(n>=1024 && i<u.length-1){n/=1024;i++;}
     return `${n.toFixed( (i?1:0) )} ${u[i]}`;
   };
+
+  const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
+
+  function hashContent(str){
+    let h = 2166136261 >>> 0;
+    for (let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return (h>>>0).toString(16);
+  }
 
   async function fileToBase64(file){
     const buf = await file.arrayBuffer();
@@ -128,25 +194,16 @@
     return `data:${file.type||'application/octet-stream'};base64,${b64}`;
   }
 
-  function hashContent(str){
-    // cheap content hash for optimistic matching
-    let h = 2166136261 >>> 0;
-    for (let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
-    return (h>>>0).toString(16);
-  }
-
   // ---------- state ----------
-  let auth = null; // { user_id, baseurl, subpart }
-  let client = null; // XanoClient
-  let channel = null; // channel instance
+  let auth = null; 
+  let client = null; 
+  let channel = null; 
   let channelName = 'main';
   let realtimeHash = null;
-  let sendingCooldown = false; // throttle 1 msg/sec
-  const pending = new Map(); // tempId -> {el, user_id, contentHash}
-  const seenMsgIds = new Set(); // dedupe
-  let historyCursor = null; // __msg_id to paginate older
+  let sendingCooldown = false;
+  const seenMsgIds = new Set();
+  let historyCursor = null;
 
-  // endpoints (server provided by you)
   function epHistory(){
     return `${auth.baseurl}/${auth.subpart}/chat/history?channel=${encodeURIComponent(channelName)}&limit=50${historyCursor?`&before=${encodeURIComponent(historyCursor)}`:''}`;
   }
@@ -158,8 +215,6 @@
   async function boot(){
     try{
       status('booting');
-
-      // parse auth from ?auth=base64
       const params = new URLSearchParams(location.search);
       const authParam = params.get('auth');
       if (!authParam) throw new Error('No auth parameter');
@@ -167,7 +222,6 @@
       if (!auth.user_id || !auth.baseurl || !auth.subpart) throw new Error('Invalid auth payload');
       userEl.textContent = `user: ${auth.user_id}`;
 
-      // do auth request
       const authUrl = `${auth.baseurl}/${auth.subpart}/auth?user_id=${encodeURIComponent(auth.user_id)}`;
       ui.sys(`authenticating…`);
       const res = await fetch(authUrl);
@@ -177,34 +231,23 @@
         throw new Error(data.msg||'Auth failed');
       }
 
-      // obtain ws script + ws info
       const wsScript = (data.script||[]).find(s=>s.type==='xano_websocket');
-      const wsInfo = data.websocket || data; // supports either format
+      const wsInfo = data.websocket || data;
       realtimeHash = wsInfo.hash;
       channelName = wsInfo.name || 'main';
       chanEl.textContent = `channel: ${channelName}`;
 
-      // load the websocket client bundle (data: URL base64)
       if (!wsScript?.url) throw new Error('Missing websocket script URL');
       ui.sys('loading websocket client…');
       await import(wsScript.url);
 
-      // connect
       ui.sys('connecting websocket…');
-      // XanoClient is exposed globally by the loaded script
       client = new XanoClient({ instanceBaseUrl: auth.baseurl, realtimeConnectionHash: realtimeHash });
       channel = client.channel(channelName);
-
-      // handlers
       channel.on(handleEvent);
-
-      // join (ask server to include history if it wants)
       channel.join?.({ history: true, presence: false }).catch(()=>{});
-
       status('connected');
       ui.sys('connected');
-
-      // initial history fetch from HTTP endpoint you provide
       await fetchAndRenderHistory();
 
     }catch(err){
@@ -216,11 +259,10 @@
   function status(s){
     const map = { connected: ['✅ Connected', 'var(--accent)'], booting: ['⏳ Booting', 'var(--muted)'], error: ['❌ Error', 'var(--error)'] };
     const [label,color] = map[s] || [s, 'var(--muted)'];
-    statusEl.textContent = label; statusEl.style.color = `var(--text)`; statusEl.style.borderColor = 'var(--border)';
+    statusEl.textContent = label; 
     statusEl.style.color = color;
   }
 
-  // ---------- history ----------
   async function fetchAndRenderHistory(){
     try{
       const url = epHistory();
@@ -229,128 +271,43 @@
       const j = await r.json();
       const msgs = j.messages||[];
       if (msgs.length) ui.sys(`[history] ${msgs.length} message(s)`);
-      // oldest -> newest for display
       msgs.forEach(renderMessage);
-      // update cursor to the oldest message id for pagination
       historyCursor = msgs.length ? msgs[0].__msg_id : historyCursor;
     }catch(e){ ui.warn(`history load failed: ${e.message}`); }
   }
 
-  // ---------- websocket events ----------
   function handleEvent(action){
     const data = action?.payload?.data;
     if (!data) return;
-    // If server sometimes wraps as array, handle both
     if (Array.isArray(data)) { data.forEach(renderMessage); } else { renderMessage(data); }
   }
 
-  // ---------- render ----------
   function renderMessage(msg){
-    // dedupe by __msg_id when present
     if (msg.__msg_id && seenMsgIds.has(msg.__msg_id)) return;
-
-    const username = msg.username || (msg.user_id?.slice(0,8) || 'user');
-    let line = `${username}: ${msg.content ?? ''}`;
-
-    // files rendering as [name (size) download]
-    if (Array.isArray(msg.files) && msg.files.length){
-      const parts = msg.files.map(f=>`[${f.name} (${formatSize(f.size)}) download]`).join(' ');
-      line += (msg.content? ' ' : '') + parts;
-    }
-
-    const el = ui.msg(username, line.replace(/^.*?:\s/, ''));
-
-    // Convert [name (size) download] into actual links
-    if (Array.isArray(msg.files)){
-      const anchors = [];
-      msg.files.forEach(f=>{
-        try{
-          const a = document.createElement('a');
-          a.className = 'dl';
-          a.textContent = `[${f.name} (${formatSize(f.size)}) download]`;
-          // create Blob URL from base64
-          const base64 = (f.data||'').split(',')[1]||'';
-          const bytes = Uint8Array.from(atob(base64), c=>c.charCodeAt(0));
-          const blob = new Blob([bytes], { type: f.mime||'application/octet-stream' });
-          a.href = URL.createObjectURL(blob);
-          a.download = f.name || 'file';
-          a.style.marginRight = '6px';
-          logEl.appendChild(a);
-          anchors.push(a);
-        }catch{}
-      });
-      if (anchors.length) logEl.appendChild(document.createElement('br'));
-    }
-
+    ui.msgElement(msg);
     if (msg.__msg_id) seenMsgIds.add(msg.__msg_id);
-
-    // match and clear pending if same user + content hash
-    const key = [...pending.keys()].find(k=>{
-      const p = pending.get(k);
-      return p && p.user_id===msg.user_id && p.contentHash===hashContent(msg.content||'');
-    });
-    if (key){
-      const p = pending.get(key);
-      if (p?.el) p.el.classList.remove('dim');
-      pending.delete(key);
-    }
   }
 
-  // ---------- sending ----------
   async function sendMessage(){
     if (sendingCooldown) { ui.warn('slow down (1 msg/sec)'); return; }
     const content = textEl.value.trim();
     if (!content && fileInp.files.length===0) return;
-
-    // prepare files as base64
     const files = [];
     for (const f of fileInp.files){
       const data = await fileToBase64(f);
       files.push({ name: f.name, size: f.size, mime: f.type, data });
     }
-
-    const payload = {
-      user_id: auth.user_id,
-      channel: channelName,
-      content,
-      files,
-    };
-
-    // optimistic UI
-    const tempId = `temp_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-    const el = ui.me(content || (files.length? `[${files.length} file(s)]` : '(empty)'));
-    el.classList.add('dim');
-    pending.set(tempId, { el, user_id: auth.user_id, contentHash: hashContent(content||'') });
-
-    // show queued file badges under composer
-    queuedFilesEl.innerHTML = '';
-
+    const payload = { user_id: auth.user_id, channel: channelName, content, files };
     try{
       sendingCooldown = true; setTimeout(()=>sendingCooldown=false, 1000);
       const r = await fetch(epSend(), { method:'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
-      if (r.status === 429){
-        // keep pending; wait for websocket echo to confirm
-        ui.warn('rate limited (429) — will confirm when echoed');
-        return;
-      }
-      if (!r.ok){
-        // on non-OK (besides 429), mark error but keep visible
-        el.classList.remove('dim'); el.classList.add('err');
-        ui.err(`send failed ${r.status}`);
-        return;
-      }
-      const j = await r.json().catch(()=>({}));
-      if (j.__msg_id) seenMsgIds.add(j.__msg_id);
-      // we still wait for echo to undim; server echo will clear pending
-    }catch(err){
-      el.classList.remove('dim'); el.classList.add('err');
-      ui.err('network error sending');
-    } finally {
+      if (r.status === 429){ ui.warn('rate limited (429) — will confirm when echoed'); return; }
+      if (!r.ok){ ui.err(`send failed ${r.status}`); return; }
+      await r.json().catch(()=>({}));
       textEl.value=''; fileInp.value='';
-    }
+    }catch(err){ ui.err('network error sending'); }
   }
 
-  // ---------- UI events ----------
   textEl.addEventListener('keydown', (e)=>{ if (e.key==='Enter') sendMessage(); });
   sendBtn.addEventListener('click', sendMessage);
   clearBtn.addEventListener('click', ()=>{ logEl.innerHTML=''; ui.sys('log cleared'); });
@@ -360,7 +317,6 @@
     for (const f of fileInp.files){ queuedFilesEl.appendChild(ui.fileBadge({name:f.name,size:f.size})); }
   });
 
-  // ---------- start ----------
   boot();
 </script>
 </body>
