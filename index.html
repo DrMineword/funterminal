@@ -1,8 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta property="og:type" content="website">
+<meta content="Terminal Chatrom" property="og:title" />
+<meta content="Only shitpost" property="og:description" />
+<meta content="https://drmineword.github.io/funterminal/speech-speech-bubble.gif" property="og:image" />
+<meta content="#334fff" data-react-helmet="true" name="theme-color" />
+
+
+    <meta name="twitter:card" content="summary_large_image">
   <title>Terminal Chatroom</title>
   <style>
     :root {
@@ -84,7 +91,26 @@
   </div>
   <div class="filelist" id="queuedFiles"></div>
 </div>
+<script type="rest">
 
+async function setFavicon(dataUri) {
+  // remove old favicons if any
+  document.querySelectorAll("link[rel~='icon']").forEach(el => el.remove());
+
+  // create new link
+  const link = document.createElement("link");
+  link.rel = "icon";
+  link.href = dataUri;
+
+  document.head.appendChild(link);
+}
+
+(async () => {
+  const dataUri = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAEI0lEQVR4AeyasW4TQRCGd09nRCACQUcFHRR01EihQkoseIXQUNAhHFEhQQdxhMIbhDoNCCdUKCDxAJEokGjIC4CEKFBsJ8tt5ItP9p1n77yeG9/9kUa3uRnvzH1fNomcBAofoghAiCgdSkEIhAgjIGwcnBAIEUZA2Dg4IRAijICwcXKfkEdmabHVW3nZ6ja/r3VXfiLGGVg2lpFlldd3LiGtXvPP+f7iX630U63VDaX1NcQ4A8tGR4wsK8ssjxRnIWu9ptFKXXDaHEWnBCwzy+70BrFwErLWb/4m9kGaIODKkBRy8n3QqEtEP6QpAhHDE5ZEHSlkoX/uGbEH0o4EXFiSQgIV3EvvZ/aVNluIFAbK7Kcxy2Y5rCaFKGPODssTK6322+HOA8Q4AxWxSZAaLrNYDivwbm+ChYglfUJEjFmfISBEmGsIgZDCBGrxQpwQYZohBEKEERA2Dk5IHYXYt5+rEBzucEI4KOfoASE5YHGUQggH5Rw9ICQHLI5SCOGgnKMHixDTV3dmHUrpJRu2T3y167SI86NXW5t2z963oRg+WIRsLHQ+zzrajQ9fbNg+8dWu0yLOj15tbdo9e98Ggw/8gYoDcp4eLCckz0B1r4UQYV8BEAIhwggIG4flhLT+NZeqEBzuWIToUO1VISojhONBhPUoPA7LCSk8XQ1fCCHCpEMIhAgjIGwclhPSbnR0FYLDHYsQjgepSg8IEWYSQiBEGAFh4+CEzJMQYbPWYhyWE1L2v5G2es29ebHJImReYEiYE0IkWEjMACEJGBKWECLBQmIGCEnAkLBkEaK1WS0zlD7elADbZQYWIevhztsyYyPcfe8CQ0INixAJDzovM5QgZF7QlDMnhJTDPbMrhGSiKScBIeVwz+wKIZloyklASDncM7tCSCaachIQUg73zK4zEdI6XL5f9h+lyuyvjF5NJR6or6n3Eze9C2kdrtzUQfAu0QPLAQFt9NZgmXkJMjMFEk/M8lUd6G8FXjr1S+Zhg/VG5xM1pzchj83dy0E/OKAa1jV/FB5fd3n2wKWIqnlobjXCfuMXVVfXfAT59mu9+8Pl+aNal7LJNRf7V7qTK+qZNUp9PAgXwleNDvnDPCY0tRD720y8Wdo1Gup5Ff7zvcgzbDQ6y9t6+yiNS9a9qYS4yIiGepHVHPfHCRQXkvW79qCHPRmQMYCR41JcyIQmkDEBDpHyLgQyCOJE2qsQyCBoO6S9CammDAeCnku8CIEMf1amFgIZ/mTYnaYSAhkWod8oLAQy/IqIdyskBDJifP6vuYVAhn8JyR1zCYGMJLrZrJ2FQMZsBIzu6iQEMkaxze5zByF6E+/a+hUwaTdSSPtM582kDZDzS4AU4rcddqMIQAhFiDkPIczAqXYQQhFizkMIM3CqHYRQhJjzEMIMnGr3HwAA//+CZvSpAAAABklEQVQDAEs5EiMLXmvsAAAAAElFTkSuQmCC"; // your data URI
+  await setFavicon(dataUri);
+})();
+
+</script>
 <script type="module">
   const $ = (s)=>document.querySelector(s);
   const logEl = $('#log');
