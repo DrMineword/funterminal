@@ -293,10 +293,10 @@ const regex = /!\[\]\(([^\s)]+)\)/g;
   }
 
   function epHistory(){
-    return `${auth.baseurl}/${auth.subpart}/chat/history?channel=${encodeURIComponent(channelName)}&limit=${msgLimit}${historyCursor?`&before=${encodeURIComponent(historyCursor)}`:''}`;
+    return `${auth.baseurl}/${auth.subpart}/chat/history?channel=${encodeURIComponent(channelName)}&user_id=${encodeURIComponent(auth.user_id)}&limit=${msgLimit}${historyCursor?`&before=${encodeURIComponent(historyCursor)}`:''}`;
   }
   function epSend(){
-    return `${auth.baseurl}/${auth.subpart}/chat/send`;
+    return `${auth.baseurl}/${auth.subpart}/chat/send?user_id=${encodeURIComponent(auth.user_id)}`;
   }
 
   // ---------- bootstrap ----------
