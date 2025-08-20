@@ -97,7 +97,9 @@
   </div>
   <div class="filelist" id="queuedFiles"></div>
 </div>
-<script type="rest">
+
+<script type="module">
+
 
 async function setFavicon(dataUri) {
   // remove old favicons if any
@@ -116,8 +118,6 @@ async function setFavicon(dataUri) {
   await setFavicon(dataUri);
 })();
 
-</script>
-<script type="module">
   const $ = (s)=>document.querySelector(s);
   const logEl = $('#log');
   const statusEl = $('#status');
