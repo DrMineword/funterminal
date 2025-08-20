@@ -17,10 +17,11 @@
     }
     * { box-sizing: border-box; }
     body {
-      margin: 0; padding: 16px; background: var(--bg); color: var(--text);
+      margin: 0; padding: 8px; background: var(--bg); color: var(--text);
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      display: flex; flex-direction: column; height: 100vh;
     }
-    .wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 12px; }
+    .wrap { flex: 1; display: flex; flex-direction: column; gap: 8px; }
     header { display:flex; gap:12px; align-items:center; justify-content:space-between; }
     .row { display:flex; gap:8px; align-items:center; flex-wrap: wrap; }
     .pill { padding:6px 10px; border:1px solid var(--border); background: var(--panel); border-radius: 999px; color: var(--muted); }
@@ -29,7 +30,9 @@
     .danger { color: var(--error); border-color:#442222; }
 
     #log {
-      background: #0d120e; border: 1px solid var(--border); border-radius: 12px; padding: 10px; height: 420px; overflow-y: auto;
+      flex: 1;
+      background: #0d120e; border: 1px solid var(--border); border-radius: 12px; padding: 10px;
+      overflow-y: auto;
       white-space: normal; line-height: 1.35; box-shadow: 0 0 0 1px #0c140e inset;
     }
     .line { padding: 6px 0; }
@@ -48,7 +51,6 @@
     .filepill { border:1px solid var(--border); background:#0e1511; padding:4px 8px; border-radius:999px; font-size:12px; }
     a.dl { color:#c7e9ff; text-decoration: underline; cursor:pointer; display:inline-block; margin-top:2px; }
 
-    .legend { font-size: 12px; color: var(--muted); }
     .sectionTitle { color:#a1f0a8; margin: 8px 0 4px; }
     .msg img.preview { max-width: 260px; border-radius: 8px; margin-top:4px; display:block; }
   </style>
@@ -67,7 +69,6 @@
     </div>
   </header>
 
-  <div class="sectionTitle">[history]</div>
   <div id="log"></div>
 
   <div class="composer">
@@ -77,7 +78,6 @@
       <button id="send" class="btn">Send</button>
     </div>
   </div>
-  <div class="legend">Files are sent as base64. Messages throttle at 1 msg/sec. Pending messages remain until echoed by websocket. 429 keeps pending.</div>
   <div class="filelist" id="queuedFiles"></div>
 </div>
 
@@ -96,7 +96,7 @@
 
   // placeholders from external JSON
   let ICONS = { none:"", onrror:"" };
-  fetch("https://drmineword.github.io/images.json")
+  fetch("https://drmineword.github.io/funterminal/images.json")
     .then(r=>r.json()).then(j=>ICONS=j).catch(()=>{});
 
   // ---------- helpers ----------
@@ -181,18 +181,6 @@
   };
 
   const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
-
-  function hashContent(str){
-    let h = 2166136261 >>> 0;
-    for (let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
-    return (h>>>0).toString(16);
-  }
-
-  async function fileToBase64(file){
-    const buf = await file.arrayBuffer();
-    const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
-    return `data:${file.type||'application/octet-stream'};base64,${b64}`;
-  }
 
   // ---------- state ----------
   let auth = null; 
@@ -301,8 +289,17 @@
     try{
       sendingCooldown = true; setTimeout(()=>sendingCooldown=false, 1000);
       const r = await fetch(epSend(), { method:'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
-      if (r.status === 429){ ui.warn('rate limited (429) — will confirm when echoed'); return; }
-      if (!r.ok){ ui.err(`send failed ${r.status}`); return; }
+      if (r.status === 429){ 
+        const txt = await r.text().catch(()=>null);
+        ui.warn(`rate limited (429) ${txt||''}`);
+        return; 
+      }
+      if (!r.ok){ 
+        let extra="";
+        try{ extra = JSON.stringify(await r.json()); }catch{}
+        ui.err(`send failed ${r.status} ${extra}`);
+        return; 
+      }
       await r.json().catch(()=>({}));
       textEl.value=''; fileInp.value='';
     }catch(err){ ui.err('network error sending'); }
