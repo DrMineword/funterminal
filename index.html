@@ -41,8 +41,8 @@
     border: 1px solid #1d2a1f;
     border-radius: 12px;
     padding: 10px;
-    height: 900px;          /* fixed height */
-    max-height: 80vh;       /* responsive cap */
+    height: 800px;          /* fixed height */
+    max-height: 90vh;       /* responsive cap */
     overflow-y: auto;       /* vertical scroll */
     white-space: pre-wrap;  /* wrap long text */
     word-wrap: break-word;  /* break long words if needed */
@@ -307,7 +307,13 @@ const regex = /!\[\]\(([^\s)]+)\)/g;
       if (!authParam) throw new Error('No auth parameter');
       auth = JSON.parse(atob(authParam));
       if (!auth.user_id || !auth.baseurl || !auth.subpart) throw new Error('Invalid auth payload');
-      userEl.textContent = `user: ${auth.user_id}`;
+      const userEl = document.querySelector('#user'); // or whatever your element is
+const userId = auth.user_id;
+
+const maskedUserId = userId.slice(0, 5) + '#'.repeat(Math.max(0, userId.length - 5));
+
+userEl.textContent = `user: ${maskedUserId}`;
+
 
       const authUrl = `${auth.baseurl}/${auth.subpart}/auth?user_id=${encodeURIComponent(auth.user_id)}`;
       ui.sys(`authenticating…`);
