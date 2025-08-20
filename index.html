@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Terminal Chat</title>
+  <style>
+    body {
+      background: black;
+      color: lime;
+      font-family: monospace;
+      padding: 10px;
+    }
+    #terminal {
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div id="terminal">[system] Initializing...\n</div>
+  <script>
+    async function initAuth() {
+      const terminal = document.getElementById("terminal");
+
+      // get auth param
+      const params = new URLSearchParams(window.location.search);
+      const authParam = params.get("auth");
+      if (!authParam) {
+        terminal.textContent += "[error] No auth parameter found.\n";
+        return;
+      }
+
+      // decode base64 json
+      let authData;
+      try {
+        authData = JSON.parse(atob(authParam));
+      } catch (e) {
+        terminal.textContent += "[error] Invalid auth data.\n";
+        return;
+      }
+
+      const { user_id, baseurl, subpart } = authData;
+      const authUrl = `${baseurl}/${subpart}/auth?user_id=${user_id}`;
+      terminal.textContent += `[system] Authenticating user: ${user_id}\n`;
+
+      try {
+        const res = await fetch(authUrl);
+        const data = await res.json();
+
+        if (data.info_code === 200) {
+          terminal.textContent += `[auth] ${data.msg}\n`;
+          // you can later use data.websocket or script instructions
+        } else if (data.info_code === 429) {
+          terminal.textContent += `[banned] ${data.msg}\n`;
+        } else if (data.info_code === 401) {
+          terminal.textContent += `[auth failed] ${data.msg}\n`;
+        } else {
+          terminal.textContent += `[error] Unexpected response: ${JSON.stringify(data)}\n`;
+        }
+
+      } catch (err) {
+        terminal.textContent += `[network error] ${err.message}\n`;
+      }
+    }
+
+    initAuth();
+  </script>
+</body>
+</html>
