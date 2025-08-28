@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WebSocket Radio</title>
+  <style>
+    body {
+      background: #111;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-family: sans-serif;
+    }
+    #startBtn {
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 8px;
+      background: #ff0066;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    #startBtn:hover { background: #cc0052; }
+  </style>
+</head>
+<body>
+  <button id="startBtn">Start Radio</button>
+
+  <script>
+    async function loadPlayer() {
+      try {
+        // Fetch and execute v2.js
+        const res = await fetch("https://drmineword.github.io/funterminal/audioplayer/webscoket_radio/v2.js");
+        const code = await res.text();
+        new Function(code)(); // execute in global scope
+        console.log("[WEBSOCKET_RADIO] Player script loaded");
+      } catch (err) {
+        console.error("[WEBSOCKET_RADIO] Failed to load script", err);
+      }
+    }
+
+    document.getElementById("startBtn").addEventListener("click", async () => {
+      document.getElementById("startBtn").style.display = "none"; // hide button
+      await loadPlayer();
+    });
+  </script>
+</body>
+</html>
