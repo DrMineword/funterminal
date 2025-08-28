@@ -61,13 +61,13 @@ iconWrapper.style.lineHeight = "1";
   content.style.flex = "1";
 
   const title = document.createElement("div");
-  title.innerHTML = `📰 <strong>${popup.title}</strong>`;
+  title.innerHTML = `<strong>${popup.title}</strong>`;
   title.style.fontSize = "16px";
   title.style.marginBottom = "6px";
   title.style.color = "#000000";
 
   const desc = document.createElement("div");
-  desc.innerHTML = `💬 ${popup.shortdesc}`;
+  desc.innerHTML = `${popup.shortdesc}`;
   desc.style.fontSize = "14px";
   desc.style.marginBottom = "6px";
   desc.style.color = "#000000";
