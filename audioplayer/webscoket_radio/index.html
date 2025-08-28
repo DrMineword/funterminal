@@ -15,6 +15,7 @@
       font-family: sans-serif;
     }
     #startBtn {
+      display: none;
       padding: 1rem 2rem;
       font-size: 1.2rem;
       border: none;
@@ -33,19 +34,25 @@
   <script>
     async function loadPlayer() {
       try {
-        // Fetch and execute v2.js
         const res = await fetch("https://drmineword.github.io/funterminal/audioplayer/webscoket_radio/v2.js");
         const code = await res.text();
-        new Function(code)(); // execute in global scope
+        new Function(code)(); // execute player script
         console.log("[WEBSOCKET_RADIO] Player script loaded");
+        // now show the button (user gesture needed to start audio)
+        document.getElementById("startBtn").style.display = "block";
       } catch (err) {
         console.error("[WEBSOCKET_RADIO] Failed to load script", err);
       }
     }
 
-    document.getElementById("startBtn").addEventListener("click", async () => {
-      document.getElementById("startBtn").style.display = "none"; // hide button
-      await loadPlayer();
+    // Load & execute player script on page load
+    loadPlayer();
+
+    // Button only unlocks audio + hides itself
+    document.getElementById("startBtn").addEventListener("click", () => {
+      document.getElementById("startBtn").style.display = "none";
+      console.log("[WEBSOCKET_RADIO] Start button clicked (audio unlocked)");
+      // nothing else here — v2.js already connected & waiting
     });
   </script>
 </body>
