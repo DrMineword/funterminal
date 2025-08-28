@@ -30,7 +30,7 @@
   // 2. Load logic handlers dynamically with cache-busting
   let file1Module, file2Module;
   try {
-    file1Module = await import(`https://drmineword.github.io/funterminal/audioplayer/webscoket_radio/alert/small-v2.js`);
+    file1Module = await import(`https://drmineword.github.io/funterminal/audioplayer/webscoket_radio/alert/small-v2.1.js`);
     file2Module = await import(`https://drmineword.github.io/funterminal/audioplayer/webscoket_radio/alert/big.js`);
   } catch (err) {
     console.error("Failed loading function files:", err);
