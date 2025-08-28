@@ -29,12 +29,12 @@
   </style>
 </head>
 <body>
-  <button id="startBtn">Start Radio V3-1</button>
+  <button id="startBtn">Start Radio V3-2</button>
 
   <script>
     async function loadPlayer() {
       try {
-        const res = await fetch("https://drmineword.github.io/funterminal/audioplayer/webscoket_radio/v3-1.js");
+        const res = await fetch("https://drmineword.github.io/funterminal/audioplayer/webscoket_radio/v3-2.js");
         const code = await res.text();
         new Function(code)(); // execute player script
         console.log("[WEBSOCKET_RADIO] Player script loaded");
