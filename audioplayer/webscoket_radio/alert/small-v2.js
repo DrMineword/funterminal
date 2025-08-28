@@ -101,7 +101,7 @@ iconWrapper.style.lineHeight = "1";
 
   content.appendChild(title);
   content.appendChild(desc);
-  content.appendChild(link);
+//  content.appendChild(link);
   content.appendChild(progressBar);
   box.appendChild(content);
   container.appendChild(box);
